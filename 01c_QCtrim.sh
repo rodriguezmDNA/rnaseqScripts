@@ -31,7 +31,7 @@ echo "Started on `date`" 2>&1 | tee $logPath
 
 
 ## Set source/destination folders.
-SeqDir="$DIR/01_trimmed/*.lane.clean.gz"
+SeqDir="$DIR/01_trimmed/*clean*"
 ToDir=$DIR/00_QC/b_trimQC/
 ##
 
