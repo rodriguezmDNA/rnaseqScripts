@@ -3,26 +3,28 @@
 # Brady lab @ ucdavis
 # Create index file for bowtie2 mapping
 # Last modified
-# 2016.06.18
+# 2017.07.jrm
+
+# !!!!!!!!!!!!!!!!!!!!!!!!!!
+# Don't use masked genomes
 
 
-# Why another script?
-##
-## Bowtie 2's command-line arguments and genome index format are both different 
-#  from Bowtie 1's.
+## Bowtie 2's command-line arguments and genome index format are both different from Bowtie 1's.
 ## When to use bowtie1 or bowtie2?
 # If reads are >50bp, use bowtie2
 # If reads are shorter than 50bp, use bowtie1 (aka, bowtie)
 
-# Don't use masked genomes
-
+############
 # Set options:
 # {bwt1/bwt2} -> Align with bowtie1 OR bowtie2
 # {cdna/genome} -> Align to cDNA or genome
 
 optionBowtie='bwt1' #bwt1 or bwt2
 optionAlign='cDNA' #genome or cDNA
+################################################################################################
 
+
+############
 ## Record time
 start_time=`date +%s`
 
@@ -46,7 +48,7 @@ logPath=$DIR/logs/$(basename $BASH_SOURCE .sh).$optionAlign$optionBowtie.log
 ##
 echo `touch $logPath` #Create file to fill with log data
 echo "Started on `date`" 2>&1 | tee $logPath
-######
+################################################################################################
 
 ######
 echo -e "Align to $optionAlign with $optionBowtie \n" 2>&1 | tee -a $logPath

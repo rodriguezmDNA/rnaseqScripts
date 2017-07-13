@@ -3,7 +3,7 @@
 # Brady lab @ ucdavis
 # obtain total number of reads of raw and trimmed libraries. Needs to run fastqc. 
 # Last modified
-# 2016.06.18
+# 2017.07.jrm
 
 ## Record time
 start_time=`date +%s`
