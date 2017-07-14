@@ -12,37 +12,42 @@ library(edgeR)
 library(gplots)
 library(calibrate)
 library(RColorBrewer)
-
+library(limma)
 
 pValCut <- 0.05
 #### Start PDF
 
-pdf("images/DE_limmaVoom_Analysis.pdf",paper = "USr")
 
 
+## Created a folder with a name to identify the analysis. Empty by default
+shortName <- "genome_GAcounts"
 ## Pre
-outDir = "06_DGE/"
-dir.create(outDir,showWarnings = F)
-doFilter <- T
+outDir = paste0("06_DGE/",shortName)
+dir.create(outDir,showWarnings = F,recursive = T)
+doFilter <- F
 #if (doFilter) {
 #  removeSamples <- c("ARID5_10mM_rep3_str12","HAT22_10mM_rep3_str12")
 #}
 
 
+imgPath <- paste0(outDir,"/DE_limmaVoom_Analysis_",shortName,".pdf")
+pdf(imgPath,paper = "USr")
+
+
 source("Scripts/limma_DEG_Functions.R")
 
 ######## Read Data
-#GeneCounts <- read.csv("05_RawCounts/GenomicAlignments_Counts_Deduplicated_countsExon.csv",row.names = 1) #1 gene
-#GeneCounts <- read.csv("05_RawCounts/GenomicAlignments_Counts_NoDeduplicated_countsExon.csv",row.names = 1) #4 genes 
-#GeneCounts <- read.csv("05_RawCounts/RawCounts_htSeq_Dedup.csv",row.names = 1) #2 genes 
-GeneCounts <- read.csv("05_RawCounts/RawCounts_htSeq_NoDedup.csv",row.names = 1) #2 genes
-colnames(GeneCounts) <- gsub("\\.bam","",colnames(GeneCounts))
+#GeneCounts <- read.csv("05_RawCounts/RawCounts_bwt1_cDNA.csv",row.names = 1) #1 gene
+#GeneCounts <- read.csv("05_RawCounts/RawCounts_bwt1_genome.csv",row.names = 1) #1 gene
+GeneCounts <- read.csv("05_RawCounts/GenomicAlignments_countsExon.csv",row.names = 1) #1 gene
+rownames(GeneCounts) <- gsub("\\.[0-9].*$","",rownames(GeneCounts))
+
+###
 dim(GeneCounts)
 
-
 dataInfo <- data.frame(do.call("rbind",strsplit(colnames(GeneCounts),"_")),row.names = 1)
-head(dataInfo)
 colnames(dataInfo) <- c("S","Lane","R","other1")
+head(dataInfo)
 
 ## Rename columns using the metadata file.
 #meta <- read.csv("meta/phenoInfoFull.csv",as.is = T,row.names = 1)
@@ -95,9 +100,13 @@ dim(GeneCounts)
 cat("Removing genes with 0 counts on all conditions \n")
 cat("Initial number of genes:",nrow(GeneCounts),"\n")
 rmIDX <- which(rowSums(GeneCounts) == 0)
-cat("Removing",length(rmIDX),"genes \n")
-GeneCounts <- GeneCounts[-rmIDX,]
-cat("Remaining number of genes:",nrow(GeneCounts),"\n")
+if (length(rmIDX) != 0){
+  cat("Removing",length(rmIDX),"genes \n")
+  GeneCounts <- GeneCounts[-rmIDX,]
+  cat("Remaining number of genes:",nrow(GeneCounts),"\n")
+} else {
+  cat("No genes with 0 counts on all  \n")
+}
 
 ## Linear modeling
 Genotype <- relevel(as.factor(meta$GenotypeName),ref="Col0")
@@ -186,7 +195,7 @@ col.Genotype <- unlist(lapply(col.Genotype,function(x){rep(x,2)}))
 
 ## Boxplot
 boxplot(v$E, range=0,col=col.Group[as.factor(meta$GroupName)], 
-        ylab="log2[counts]", xlab="sample", main="QUANT Counts",
+        ylab="log2[counts]", xlab="sample", main="voom normalized counts",
         cex.axis=0.5,las=2)
 
 
@@ -217,6 +226,7 @@ par(mfrow=c(1,1))
 #Or just use glimma
 library(Glimma)
 glMDSPlot(v, labels=meta$SampleNameFull, groups=Targets[,c("GenotypeName","Treatment","GroupName","Set","Strip","Lane")],
+          folder=paste0(outDir,"/glimma"),
           launch=T)
 
 ## --
@@ -240,61 +250,61 @@ contrastMatrix <- makeContrasts(
   "nac032_1mM"=ANAC032_1mM-Col0_1mM,
   #"nac032"=(ANAC032_1mM+ANAC032_10mM)-(Col0_10mM+Col0_1mM),
   ##ARF9
-  "arf9_int"=(ARF9_1mM-ARF9_10mM)-(Col0_1mM-Col0_10mM),
-  "arf9_10mM"=ARF9_10mM-Col0_10mM,
-  "arf9_1mM"=ARF9_1mM-Col0_1mM,
-  #"arf9"=((ARF9_1mM+ARF9_10mM))-((Col0_10mM+Col0_1mM)),
-  ##
-  ##ARF181
-  "arf181_int"=(ARF181_1mM-ARF181_10mM)-(Col0_1mM-Col0_10mM),
-  "arf181_10mM"=ARF181_10mM-Col0_10mM,
-  "arf181_1mM"=ARF181_1mM-Col0_1mM,
-  #"arf181"=((ARF181_1mM+ARF181_10mM))-((Col0_10mM+Col0_1mM)),
-  ##ARF182
-  "arf182_int"=(ARF182_1mM-ARF182_10mM)-(Col0_1mM-Col0_10mM),
-  "arf182_10mM"=ARF182_10mM-Col0_10mM,
-  "arf182_1mM"=ARF182_1mM-Col0_1mM,
-  #"arf182"=((ARF182_1mM+ARF182_10mM))-((Col0_10mM+Col0_1mM)),
-  # "ARID5"   
-  "arid5_int"=(ARID5_1mM-ARID5_10mM)-(Col0_1mM-Col0_10mM),
-  "arid5_10mM"=ARID5_10mM-Col0_10mM,
-  "arid5_1mM"=ARID5_1mM-Col0_1mM,
-  #"arid5"=((ARID5_1mM+ARID5_10mM))-((Col0_10mM+Col0_1mM)),
-  # "ERF107"
-  "erf107_int"=(ERF107_1mM-ERF107_10mM)-(Col0_1mM-Col0_10mM),
-  "erf107_10mM"=ERF107_10mM-Col0_10mM,
-  "erf107_1mM"=ERF107_1mM-Col0_1mM,
-  #"erf107"=((ERF107_1mM+ERF107_10mM))-((Col0_10mM+Col0_1mM)),
-  # "HAT22"   
-  "hat22_int"=(HAT22_1mM-HAT22_10mM)-(Col0_1mM-Col0_10mM),
-  "hat22_10mM"=HAT22_10mM-Col0_10mM,
-  "hat22_1mM"=HAT22_1mM-Col0_1mM,
-  #"hat22"=((HAT22_1mM+HAT22_10mM))-((Col0_10mM+Col0_1mM)),
-  # "HMG"
-  "hmg_int"=(HMG_1mM-HMG_10mM)-(Col0_1mM-Col0_10mM),
-  "hmg_10mM"=HMG_10mM-Col0_10mM,
-  "hmg_1mM"=HMG_1mM-Col0_1mM,
-  #"hmg"=((HMG_1mM+HMG_10mM))-((Col0_10mM+Col0_1mM)),
-  # "LBD4" 
-  "lbd4_int"=(LBD4_1mM-LBD4_10mM)-(Col0_1mM-Col0_10mM),
-  "lbd4_10mM"=LBD4_10mM-Col0_10mM,
-  "lbd4_1mM"=LBD4_1mM-Col0_1mM,
-  #"lbd4"=((LBD4_1mM+LBD4_10mM))-((Col0_10mM+Col0_1mM)),
-  # "MYB29"    
-  "myb29_int"=(MYB29_1mM-MYB29_10mM)-(Col0_1mM-Col0_10mM),
-  "myb29_10mM"=MYB29_10mM-Col0_10mM,
-  "myb29_1mM"=MYB29_1mM-Col0_1mM,
-  #"myb29"=((MYB29_1mM+MYB29_10mM))-((Col0_10mM+Col0_1mM)),
-  # "NAC102"
-  "nac102_int"=(NAC102_1mM-NAC102_10mM)-(Col0_1mM-Col0_10mM),
-  "nac102_10mM"=NAC102_10mM-Col0_10mM,
-  "nac102_1mM"=NAC102_1mM-Col0_1mM,
-  #"nac102"=((NAC102_1mM+NAC102_10mM))-((Col0_10mM+Col0_1mM)),
-  # "RAV2EDF2"
-  "rav2_int"=(RAV2EDF2_1mM-RAV2EDF2_10mM)-(Col0_1mM-Col0_10mM),
-  "rav2_10mM"=RAV2EDF2_10mM-Col0_10mM,
-  "rav2_1mM"=RAV2EDF2_1mM-Col0_1mM,
-  #"rav2"=((RAV2EDF2_1mM+RAV2EDF2_10mM))-((Col0_10mM+Col0_1mM)),
+  # "arf9_int"=(ARF9_1mM-ARF9_10mM)-(Col0_1mM-Col0_10mM),
+  # "arf9_10mM"=ARF9_10mM-Col0_10mM,
+  # "arf9_1mM"=ARF9_1mM-Col0_1mM,
+  # #"arf9"=((ARF9_1mM+ARF9_10mM))-((Col0_10mM+Col0_1mM)),
+  # ##
+  # ##ARF181
+  # "arf181_int"=(ARF181_1mM-ARF181_10mM)-(Col0_1mM-Col0_10mM),
+  # "arf181_10mM"=ARF181_10mM-Col0_10mM,
+  # "arf181_1mM"=ARF181_1mM-Col0_1mM,
+  # #"arf181"=((ARF181_1mM+ARF181_10mM))-((Col0_10mM+Col0_1mM)),
+  # ##ARF182
+  # "arf182_int"=(ARF182_1mM-ARF182_10mM)-(Col0_1mM-Col0_10mM),
+  # "arf182_10mM"=ARF182_10mM-Col0_10mM,
+  # "arf182_1mM"=ARF182_1mM-Col0_1mM,
+  # #"arf182"=((ARF182_1mM+ARF182_10mM))-((Col0_10mM+Col0_1mM)),
+  # # "ARID5"   
+  # "arid5_int"=(ARID5_1mM-ARID5_10mM)-(Col0_1mM-Col0_10mM),
+  # "arid5_10mM"=ARID5_10mM-Col0_10mM,
+  # "arid5_1mM"=ARID5_1mM-Col0_1mM,
+  # #"arid5"=((ARID5_1mM+ARID5_10mM))-((Col0_10mM+Col0_1mM)),
+  # # "ERF107"
+  # "erf107_int"=(ERF107_1mM-ERF107_10mM)-(Col0_1mM-Col0_10mM),
+  # "erf107_10mM"=ERF107_10mM-Col0_10mM,
+  # "erf107_1mM"=ERF107_1mM-Col0_1mM,
+  # #"erf107"=((ERF107_1mM+ERF107_10mM))-((Col0_10mM+Col0_1mM)),
+  # # "HAT22"   
+  # "hat22_int"=(HAT22_1mM-HAT22_10mM)-(Col0_1mM-Col0_10mM),
+  # "hat22_10mM"=HAT22_10mM-Col0_10mM,
+  # "hat22_1mM"=HAT22_1mM-Col0_1mM,
+  # #"hat22"=((HAT22_1mM+HAT22_10mM))-((Col0_10mM+Col0_1mM)),
+  # # "HMG"
+  # "hmg_int"=(HMG_1mM-HMG_10mM)-(Col0_1mM-Col0_10mM),
+  # "hmg_10mM"=HMG_10mM-Col0_10mM,
+  # "hmg_1mM"=HMG_1mM-Col0_1mM,
+  # #"hmg"=((HMG_1mM+HMG_10mM))-((Col0_10mM+Col0_1mM)),
+  # # "LBD4" 
+  # "lbd4_int"=(LBD4_1mM-LBD4_10mM)-(Col0_1mM-Col0_10mM),
+  # "lbd4_10mM"=LBD4_10mM-Col0_10mM,
+  # "lbd4_1mM"=LBD4_1mM-Col0_1mM,
+  # #"lbd4"=((LBD4_1mM+LBD4_10mM))-((Col0_10mM+Col0_1mM)),
+  # # "MYB29"    
+  # "myb29_int"=(MYB29_1mM-MYB29_10mM)-(Col0_1mM-Col0_10mM),
+  # "myb29_10mM"=MYB29_10mM-Col0_10mM,
+  # "myb29_1mM"=MYB29_1mM-Col0_1mM,
+  # #"myb29"=((MYB29_1mM+MYB29_10mM))-((Col0_10mM+Col0_1mM)),
+  # # "NAC102"
+  # "nac102_int"=(NAC102_1mM-NAC102_10mM)-(Col0_1mM-Col0_10mM),
+  # "nac102_10mM"=NAC102_10mM-Col0_10mM,
+  # "nac102_1mM"=NAC102_1mM-Col0_1mM,
+  # #"nac102"=((NAC102_1mM+NAC102_10mM))-((Col0_10mM+Col0_1mM)),
+  # # "RAV2EDF2"
+  # "rav2_int"=(RAV2EDF2_1mM-RAV2EDF2_10mM)-(Col0_1mM-Col0_10mM),
+  # "rav2_10mM"=RAV2EDF2_10mM-Col0_10mM,
+  # "rav2_1mM"=RAV2EDF2_1mM-Col0_1mM,
+  # #"rav2"=((RAV2EDF2_1mM+RAV2EDF2_10mM))-((Col0_10mM+Col0_1mM)),
   levels = design)
 
 
@@ -307,12 +317,14 @@ results <- decideTests(fit2)#,lfc = logCut,p.value = pValCut)
 summary(results)
 
 if (ncol(results) <= 5){
-  vennDiagram(results)
+  vennDiagram(results,include = c("up","down"))
 }
 
 DESummary <- t(summary(decideTests(fit2)))
 # --
-write.csv(x=DESummary,"06_DGE/DESummaryInteractions.csv",quote = F,row.names = T)
+
+titulo <- paste0(outDir,"/DESummaryInteractions_",shortName,".csv")
+write.csv(x=DESummary,titulo,quote = F,row.names = T)
 
 ###
 # 
@@ -332,7 +344,8 @@ print(DESummary)
 # --
 
 voomNormalizedExpression <- v$E
-save(voomNormalizedExpression,file = "06_DGE/voomNormalizedExpression.RData")
+titulo <- paste0(outDir,"/voomNormalizedExpression",shortName,".RData")
+save(voomNormalizedExpression,file = titulo)
 
 
 # --
@@ -352,12 +365,8 @@ AGI2Symbol <- unlist(AGI2Symbol)
 head(AGI2Symbol)
 
 ## --
-
 logCut <- 1
 pValCut <- 0.05
-
-##
-
 
 ### Set list of contrasts to drop:
 ## For genotypes
@@ -423,16 +432,27 @@ for (contrast in uniqContrasts){
 sapply(DEList,function(x){table(x[,grep("adj.P.Val",colnames(x))] < 0.05)})
 significantDE <- lapply(DEList,function(x){ x[x[,grep("adj.P.Val",colnames(x))] < 0.05,] })
 sapply(significantDE,nrow)
-save(significantDE,file = "06_DGE/DEList.RData")
+##
 
+
+#
+### Save full list 
+titulo <- paste0(outDir,"/DEList",shortName,".RData")
+save(DEList,file = titulo)
+### Save list of significant genes
+titulo <- paste0(outDir,"/Significant_DElist",shortName,".RData")
+save(significantDE,file = titulo)
+
+### Save each contrast individually
+dirContrasts <- paste0(outDir,"/contrasts")
+dir.create(dirContrasts)
 for (each in names(significantDE))
 {
-  write.csv(file = paste0("06_DGE/Signif/",each,".csv"),significantDE[[each]])
+  cat ("Saving contrast:", each,"\n")
+  titulo <- paste0(dirContrasts,"/",shortName,"_",each,".RData")
+  write.csv(file = titulo,significantDE[[each]])
 }
-#
-#
-save(DEList,file = "06_DGE/DEList.RData")
-save(DESignificant,file = "06_DGE/DESignificant.RData")
+##################
 
 
 # pdf("06_DGE/Heatmaps_Significant.pdf",paper = "US")
@@ -448,13 +468,13 @@ save(DESignificant,file = "06_DGE/DESignificant.RData")
 dev.off()
 ###########################
 
-
 ## -- Make tables
-source("Scripts/metaFunctions_forNetworkAnalysis.R")
+source("Scripts/functions_jrm.R")
 
 ## Convert everything to a single table
 DE_All <- condenseListTables(DEList) ## Use a custom function
 dim(DE_All)
+head(DE_All)
 
 ################################
 ## Get all symbols
@@ -465,20 +485,20 @@ names(Symbols) <- GeneNames
 
 ### This won't work in this case, we have more logFC columns than adjPVals columns
 # ## Get logFC values and adjPvals of all genes and contrasts
-#All_logFC <- DE_All[,grep("logFC",colnames(DE_All))]
-# All_logFC <- All_logFC[,-grep("_",colnames(All_logFC))] #Only interaction FC
-# All_adjpVal <- DE_All[,grep("adj.P.Val",colnames(DE_All))]
-# head(All_adjpVal)
-# head(All_logFC)
+All_logFC <- DE_All[,grep("logFC",colnames(DE_All))]
+#All_logFC <- All_logFC[,-grep("_",colnames(All_logFC))] #Only interaction FC
+All_adjpVal <- DE_All[,grep("adj.P.Val",colnames(DE_All))]
+head(All_adjpVal)
+head(All_logFC)
 
-# ## Filter out non significant logFCs
-# DE_Significant <- All_logFC 
-# DE_Significant[All_adjpVal > pValCut] <- NA
+## Filter out non significant logFCs
+DE_Significant <- All_logFC
+DE_Significant[All_adjpVal > pValCut] <- NA
 
-# Create a binary matrix of significance 
-# signMatrix <- All_adjpVal 
-# signMatrix[All_adjpVal < pValCut] <- "*"
-# signMatrix[All_adjpVal > pValCut] <- NA
+#Create a binary matrix of significance
+signMatrix <- All_adjpVal
+signMatrix[All_adjpVal < pValCut] <- "*"
+signMatrix[All_adjpVal > pValCut] <- NA
 ## --
 
 #write.csv(x = All_logFC,"06_DGE/All_DEG_Interactionss.csv",quote = F,row.names = T)
@@ -501,8 +521,6 @@ lines <- c(
            "AT5G63790",#nac102
            "AT1G68840") #rav2/edf2
 
-
-
 linesSymbols <- c(
   "NAC032", #nac32
   "ARF9", #arf9
@@ -517,14 +535,13 @@ linesSymbols <- c(
   "RAV2") #rav2/edf2
 
 
-
 TDNA <- cbind(lines,linesSymbols)
 
 #Get only values for the genotype.
-All_logFC <- DE_All[,grep("10mM.logFC",colnames(DE_All))]
+All_logFC <- DE_All[,grep("logFC",colnames(DE_All))]
 #All_logFC <- All_logFC[,-grep("1mM",colnames(All_logFC))] 
 # get p values
-All_adjpVal <- DE_All[,grep("_10mM.adj.P.Val",colnames(DE_All))]
+All_adjpVal <- DE_All[,grep("adj.P.Val",colnames(DE_All))]
 signMatrix <- All_adjpVal 
 signMatrix[All_adjpVal < pValCut] <- "*"
 signMatrix[All_adjpVal > pValCut] <- NA
@@ -555,7 +572,9 @@ colors <- colorRampPalette(
   RColorBrewer::brewer.pal(20,"RdYlBu")
 )
 
-pdf("06_DGE/Heatmap_TDNA_interactionValues.pdf",paper = "USr")
+
+titulo <- paste0(outDir,"/Heatmap_TDNA_",shortName,".pdf")
+pdf(titulo,paper = "USr")
 #####
 lmat=rbind(c(9, 4, 3), 
            c(2, 7, 8),
@@ -564,11 +583,11 @@ lhei=c(0.15,0.2,0.5)
 lwid=c(0.2,0.3,0.7)
 
 
-colnames(hmData) <- tolower(gsub("_10mM.logFC","",colnames(hmData)))
-colnames(hmData)[3] <- "arf18-1"
-colnames(hmData)[4] <- "arf18-2"
-colnames(hmData)[8] <- "hmgb15"
-colnames(hmData)[12] <- "rav2"
+colnames(hmData) <- tolower(gsub(".logFC","",colnames(hmData)))
+# colnames(hmData)[3] <- "arf18-1"
+# colnames(hmData)[4] <- "arf18-2"
+# colnames(hmData)[8] <- "hmgb15"
+# colnames(hmData)[12] <- "rav2"
 heatmap.2(hmData, trace = "none", na.rm = T,  
           col=rev(colors(125)), density.info = "none",
           margins = c(8,8), keysize =1.5,
@@ -584,11 +603,7 @@ dev.off()
 
 
 ############################################################
-############################################################
 ############################## Enrichment tests
-
-
-
 ############################ Pooled
 uniqGenotypes <- unique(gsub("_.*$","",colnames(contrastMatrix)))
 deGenesList2 <- list()
@@ -602,7 +617,6 @@ pValCutOff <- 0.05
 cat ("Filtering by pValue  <", pValCutOff , " \n")
 logfcExprs <- lapply(DEList,function(x){x[x[,grep("adj.P.Val",colnames(x))] < pValCutOff ,grep("logFC",colnames(x)),drop=F]})
 deGenesList <- lapply(logfcExprs, rownames)
-
 
 
 sapply(deGenesList,length)
@@ -633,6 +647,7 @@ cat (length(GenesInNetwork)," unique genes in network \n")
 
 #sapply(logfcExprs,nrow)
 DE_Full <- condenseListTables(DEList)
+
 Universe <- rownames(DE_Full)
 length(Universe)
 
@@ -667,12 +682,12 @@ fisherPVals2 <- sapply(fisherResults2,function(x){x$p.value})
 fisherPVals2 < 0.05 #Which are < 0.05
 signifFisher <- ifelse(fisherPVals2 < 0.05,"*","NS")
 contingencyTable2 = cbind(contingencyTable2,"pVals"=fisherPVals2,"signif"=signifFisher)
-write.csv(x=contingencyTable2,"06_DGE/FisherTest_IndividualContrasts.csv",quote = F,row.names = T)
+
+titulo <- paste0(outDir,"/FisherTest_IndividualContrasts_",shortName,".csv")
+write.csv(x=contingencyTable2,file = titulo,quote = F,row.names = T)
 
 
-
-
-##########
+########## Pooled
 contingencyTable1 <- lapply(deGenesList2,function(x){
   DEgenes <- x;
   print( length(DEgenes));
@@ -703,29 +718,9 @@ names(fisherResults1)
 fisherPVals1 <- sapply(fisherResults1,function(x){x$p.value})
 fisherPVals1 < 0.05 #Which are < 0.05
 ##
-
 signifFisher1 <- ifelse(fisherPVals1 < 0.05,"*","NS")
 contingencyTable1 = cbind(contingencyTable1,"pVals"=fisherPVals1,"signif"=signifFisher1)
-write.csv(x=contingencyTable1,"06_DGE/FisherTest_Pooled.csv",quote = F,row.names = T)
-
-# dev.off()
-#dev.off()
 
 
-contingencyTable1
-contingencyTable2
-
-# arf181_int         2          16         415          22601 0.04132182      *
-#   arf181_10mM       26        1595         391          21022 0.62838136     NS
-# arf181_1mM        16         853         401          21764 0.89666569     NS
-# arf182_int         0           0         417          22617 1.00000000     NS
-# arf182_10mM        4         115         413          22502 0.16980416     NS
-# arf182_1mM         1          56         416          22561 1.00000000     NS
-# arid5_int          1           1         416          22616 0.03588037      *
-#   arid5_10mM         3          96         414          22521 0.26665801     NS
-# arid5_1mM          1           1         416          22616 0.03588037      *
-#   erf107_int         0           1         417          22616 1.00000000     NS
-# erf107_10mM        2         155         415          22462 1.00000000     NS
-# erf107_1mM         1           4         416          22613 0.08730704     NS
-# hat22_int          1           1         416          22616 0.03588037      *
-#   hat22_10mM         1          29         416          22588 0.42214654     NS
+titulo <- paste0(outDir,"/FisherTest_PooledGenes_perGenotype_",shortName,".csv")
+write.csv(x=contingencyTable1,file = titulo,quote = F,row.names = T)

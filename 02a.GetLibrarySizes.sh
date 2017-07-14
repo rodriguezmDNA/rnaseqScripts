@@ -37,7 +37,7 @@ trimPath="$DIR/00_QC/b_trimQC"
 inExt=".zip" #Type of file
 
 # Write to 
-outPath="$DIR/00b_LibrarySizes"
+outPath="$DIR/02_LibrarySizes"
 outRaw="$outPath/Raw_TotalSequences.txt"
 outTrim="$outPath/Trimmed_TotalSequences.txt"
 

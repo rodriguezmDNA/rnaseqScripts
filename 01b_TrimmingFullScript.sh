@@ -74,7 +74,7 @@ echo "Trimming option $optionTrim" 2>&1 | tee $logPath
 ########################################################################################################################
 ########################################################################################################################
 
-SeqDir="$DIR/RawData/*Col-1-1*L006*.fastq.gz"
+SeqDir="$DIR/RawData/*.fastq.gz"
 
 ## Remove first 8bp and sequences with low quality (< 33) with fastx_trimmer
 

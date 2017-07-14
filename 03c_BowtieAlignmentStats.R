@@ -16,13 +16,14 @@ library(reshape)
 setwd ("~/Desktop/junk/")
 
 ### User defined options
-option <- "cDNAbwt1" #cDNAbwt1,genomebwt2
+option <- "genomebwt1" #cDNAbwt1,genomebwt1,genomebwt2,cDNAbwt2. Choose one.
 
 
 ############### 
 logDir <- paste0("logs/bowStats_",option)
 
 logFiles <- list.files(logDir,pattern = ".log",full.names = T)
+length(logFiles)
 dir.create("images",showWarnings = F)
 
 
@@ -93,12 +94,16 @@ mar.default <- c(15,4,8,6) + 0.1
 ggplot(toGraph, aes(Library, value)) +   
   geom_bar(aes(fill = variable), position = "stack", stat="identity") +
   labs(title = "Mapping efficiency (counts)") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) #+ facet_wrap(~group,nrow=2,scales = 'free_x')
+  theme(plot.margin = unit(c(1.5,1.5,1.5,1.5), "cm")) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),axis.text=element_text(size=6)) # +
+  #facet_wrap(~group,nrow=2,scales = 'free_x')
 
 ggplot(percentGraph, aes(Library, value)) +   
   geom_bar(aes(fill = variable), position = "stack", stat="identity") +
   labs(title = "Mapping efficiency (%)") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) #+ facet_wrap(~group,nrow=2,scales = 'free_x')
+  theme(plot.margin = unit(c(1.5,1.5,1.5,1.5), "cm")) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),axis.text=element_text(size=6)) # +
+  #facet_wrap(~group,nrow=2,scales = 'free_x')
 
 dev.off()
 

@@ -5,7 +5,7 @@
 #biocLite(c("Rsamtools","GenomicFeatures","GenomicAlignments"))
 #biocLite("GenomicFeatures")
 
-setwd("~/Desktop/junk/")
+setwd("../")
 library("GenomicFeatures")
 library("Rsamtools")
 library("GenomicAlignments")

@@ -1,61 +1,54 @@
-setwd("~/Desktop/RootSeq_NitrogenPioneer/")
+setwd("~/Desktop/junk/")
 
 library(RColorBrewer)
 library(ggplot2)
-outFile  <- "images/00_Raw_LibrariesSize.pdf"
+
 
 outPath <- "images"
 dir.create(outPath, showWarnings=FALSE)
 
-pdf(outFile, width=12, height=12)
+outFile  <- paste0(outPath,"/Raw_and_Trimmed_LibrariesSize.pdf")
+
+## Read data
+Raw <- read.table("02_LibrarySizes/Raw_TotalSequences.txt", sep="",as.is = T,header = T,stringsAsFactors = F)
+Trim <- read.table("02_LibrarySizes/Trimmed_TotalSequences.txt", sep="",as.is = T,header = T,stringsAsFactors = F)
 
 
-### 
-# Before Trimming: 
-TotalCounts <- read.table("00b_LibrarySizes/Raw_TotalSequences.txt", sep=" ")
-TotalCounts <- TotalCounts[-grep("U",TotalCounts$V1),] #Unknown libraries away
-colnames(TotalCounts) <- c("Library","Counts")
+# Process data frame
+Raw$Type <- "Raw"
+Trim$Type <- "Trimmed"
+TotalCounts <- rbind(Raw,Trim)
 
-TotalCounts$"Counts" <- as.numeric(sub("Total Sequences ","",TotalCounts$"Counts"))
+## Get as million counts
+TotalCounts$"Counts" <- TotalCounts$Counts/1000000 #million reads
 
-
-TotalCounts$"Counts" <- TotalCounts$"Counts"/1000000 #million reads
-
-
-rownames(TotalCounts) <- sub("_fastqc.zip$","",TotalCounts[,1])
-TotalCounts <- TotalCounts[,2,drop=F]
-
-#
-TotalCounts$Group <- gsub("^str.[0-9]_|_set.[0-9]$","\\1",rownames(TotalCounts))
-TotalCounts$Time <- gsub("_tr.[ab]$","\\1",TotalCounts$Group)
-TotalCounts$Treat <- gsub("^tm.[0-9]*_","\\1",TotalCounts$Group)
-TotalCounts$Library <- gsub("^str.[0-9]_|set|[.]|tr|tm|_","\\1",rownames(TotalCounts))
-
+# Use regex to get genotypes and treatments
+TotalCounts$Library <- TotalCounts$File
+TotalCounts$Group <- gsub("_S[0-9].*$","\\1",TotalCounts$Library)
+#TotalCounts$Time <- gsub("_tr.[ab]$","\\1",TotalCounts$Group)
+TotalCounts$Treat <- sapply(strsplit(gsub("Col|SALK-","",TotalCounts$Group),"-"),"[",2)
+TotalCounts$Genotype <- sapply(strsplit(TotalCounts$Group,"-"),"[",1)
 TotalCounts <- TotalCounts[order(TotalCounts$Group),]
 
 
+### Save to PDF
+pdf(outFile, paper = "a4r")
 
 
-
-###
-par(oma = c(0,0,2,0), mar = c(6.1, 6, 2.1, 1.0),mgp = c(5, 0.5, 0))
+### ggplot2
+par(oma = c(0,0,2,0), mar = c(2.1, 2, 2.1, 1.0),mgp = c(5, 0.5, 0))
 ## Combined size of libraries  OK
-ggplot(data=TotalCounts, aes(x=Treat, y=Counts, fill=Time)) +
+ggplot(data=TotalCounts, aes(x=Library, y=Counts, fill=Type)) +
   geom_bar(stat = "identity", position = position_dodge()) + 
-  scale_fill_brewer(palette="Set3") +
-  xlab("Treatment") + ylab("Counts (millions)") +
-  ggtitle("Total library sizes (Grouped by time)")
-
-## Individual libraries OK
-
-ggplot(data=TotalCounts, aes(x=TotalCounts$Library, y=Counts ,color=Time)) +
-  geom_bar(stat = "identity", position = position_dodge()) + 
-  #geom_point(stat="identity") +  
-  scale_fill_brewer(palette="Set3") +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1)) +
-  facet_grid(.~Group, scales = "free", space="free") +
-  xlab("Library") + ylab("Counts (millions)") +
-  ggtitle("Individual library sizes (Time~Treatment)")
-
+  scale_fill_brewer(palette="Accent") +
+  theme(plot.margin = unit(c(1.5,1.5,1.5,1.5), "cm")) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),axis.text=element_text(size=6)) +
+  xlab("Library") + ylab("Counts (millions)") + #facet_grid(Genotype~Treat) + 
+ggtitle("Raw Library Sizes")
 
 dev.off()
+
+
+
+
+

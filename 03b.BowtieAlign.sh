@@ -20,7 +20,7 @@
 # {cdna/genome} -> Align to cDNA or genome
 
 optionBowtie='bwt1' #bwt1 or bwt2
-optionAlign='cDNA' #genome or cDNA
+optionAlign='genome' #genome or cDNA
 ################################################################################################
 
 
@@ -141,7 +141,7 @@ if [ $optionBowtie == "bwt2" ]; then ##Coupled with reaper
 	bwtParams="--time -p3 -k 10 --sensitive-local --no-unal"
 	toBAM="view -h -q30 -b -S"
 	bow2 $bwtParams $toBAM
-	
+
 fi;fi;
 
 
