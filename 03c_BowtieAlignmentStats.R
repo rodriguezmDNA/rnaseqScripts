@@ -13,10 +13,10 @@
 library(ggplot2)
 library(reshape)
 
-setwd ("~/Desktop/junk/")
+#setwd ("~/Desktop/junk/")
 
 ### User defined options
-option <- "genomebwt1" #cDNAbwt1,genomebwt1,genomebwt2,cDNAbwt2. Choose one.
+option <- "cDNAbwt2" #cDNAbwt1,genomebwt1,genomebwt2,cDNAbwt2 (Choose one)
 
 
 ############### 
@@ -32,25 +32,51 @@ Names <- basename(logFiles)
 tempIndex = order(gsub("tm|[ab][0-9]$","\\1",Names))
 logFiles[tempIndex]
 
-
-## Save stats into a list
-MapStatsList <- list()
-for (each in logFiles[tempIndex]){
-  
-  print (each)
-  #
-  name <- basename(each)
-  name <- gsub(".log","\\1",name)
-  
-  #
-  temp <- read.table(each,header = F,fill=T,comment.char = "",stringsAsFactors = F,as.is = T)
-  #head(temp)
-  total   <- as.numeric ( temp[1,4]) # Total number of reads
-  aligned <- as.numeric ( temp[2,9]) # Aligned reads
-  un      <- as.numeric (temp[3,7]) # Unaligned reads
-  supressed      <- as.numeric (temp[4,9]) # Unaligned reads
-  MapStatsList[[name]] <- c(total, aligned ,un,supressed)
+if (option == "cDNAbwt1" | option ==  "genomebwt1"){
+  cat("Doing Stats for Bowtie 1")
+  ## Save stats into a list
+  MapStatsList <- list()
+  for (each in logFiles[tempIndex]){
+    
+    print (each)
+    #
+    name <- basename(each)
+    name <- gsub(".log","\\1",name)
+    
+    #
+    temp <- read.table(each,header = F,fill=T,comment.char = "",stringsAsFactors = F,as.is = T)
+    #head(temp)
+    total   <- as.numeric ( temp[1,4]) # Total number of reads
+    aligned <- as.numeric ( temp[2,9]) # Aligned reads
+    un      <- as.numeric (temp[3,7]) # Unaligned reads
+    supressed      <- as.numeric (temp[4,9]) # Unaligned reads
+    MapStatsList[[name]] <- c(total, aligned ,un,supressed)
+  }
 }
+
+if (option == "cDNAbwt2" | option ==  "genomebwt2"){
+  cat("Doing Stats for Bowtie 2")
+  ## Save stats into a list
+  MapStatsList <- list()
+  for (each in logFiles[tempIndex]){
+    
+    print (each)
+    #
+    name <- basename(each)
+    name <- gsub(".log","\\1",name)
+    
+    #
+    temp <- read.table(each,header = F,fill=T,comment.char = "",stringsAsFactors = F,as.is = T)
+    #head(temp)
+    total   <- as.numeric ( temp[5,1]) # Total number of reads
+    aligned <- as.numeric ( temp[9,1]) # Aligned reads
+    un      <- as.numeric (temp[8,1]) # Unaligned reads
+    supressed      <- as.numeric (temp[11,1]) # Unaligned reads
+    MapStatsList[[name]] <- c(total, aligned ,un,supressed)
+  }
+}
+
+
 
 MapStats <- do.call("rbind",MapStatsList)
 colnames(MapStats) <- c("total", "aligned" ,"unaligned","supressed")

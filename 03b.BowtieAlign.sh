@@ -106,7 +106,7 @@ suffixOut='athIndex' #Same as BuildIndex script
 
 
 ## Read
-inSuffix="Col-1-1_S109_L006_R1_001*clean*"
+inSuffix="*clean*"
 inputFolder="$DIR/01_trimmed"
 
 
