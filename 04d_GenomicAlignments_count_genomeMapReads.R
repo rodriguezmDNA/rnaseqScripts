@@ -5,7 +5,9 @@
 #biocLite(c("Rsamtools","GenomicFeatures","GenomicAlignments"))
 #biocLite("GenomicFeatures")
 
-setwd("../")
+#setwd("../")
+
+
 library("GenomicFeatures")
 library("Rsamtools")
 library("GenomicAlignments")
@@ -17,7 +19,8 @@ files <- list.files("03_alignment/bwt1_genome/",pattern = "bam",full.names = T) 
 #files <- list.files("03b_deduplicated/",pattern = "bam",full.names = T) ## After dedupliating with overAmp
 
 ## Read GFF object with annotation data
-TxDB <- makeTxDbFromGFF("meta/TAIR10_withTransposons.gff",circ_seqs = character())
+gffFile <- list.files("meta/",pattern = "TAIR10_withTransposons.gff",full.names = T)
+TxDB <- makeTxDbFromGFF(gffFile,circ_seqs = character())
 TxDB
 claTxDB
 seqlevels(TxDB)
