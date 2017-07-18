@@ -19,7 +19,7 @@
 # Set options:
 # bwt1 -> To use bowtie1 
 # bwt2 -> To use bowtie1
-optionBowtie='bwt1'
+optionBowtie='bwt2'
 
 
 ## Record time

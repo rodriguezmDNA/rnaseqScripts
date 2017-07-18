@@ -19,8 +19,8 @@
 # {bwt1/bwt2} -> Align with bowtie1 OR bowtie2
 # {cdna/genome} -> Align to cDNA or genome
 
-optionBowtie='bwt1' #bwt1 or bwt2
-optionAlign='genome' #genome or cDNA
+optionBowtie='bwt2' #bwt1 or bwt2
+optionAlign='cDNA' #genome or cDNA
 ################################################################################################
 
 
@@ -80,7 +80,7 @@ bow2  () {
 	echo -e 'Align with bowtie 2 \n' 2>&1 | tee -a $logPath
 	
 	for fqFile in `ls $inputFolder/*$inSuffix`; do
-		name=`echo $fqFile | perl -pe "s/.+\/|\.$inSuffix$//g"`; ##Remove suffix from file name
+		name=`echo $fqFile | perl -pe "s/.+\/|\.lane.clean.gz//g"`; ##Remove suffix from file name
 		echo $name;
 		echo $bwtParams;
 		echo $idxFile;
@@ -89,9 +89,11 @@ bow2  () {
 		#For tests use | head -n 400 | in between gzip and bowtie		
 
 		gunzip -dc $fqFile | bowtie2 $bwtParams -x $idxFile - -S $outPath/$name.sam 2>&1 | tee $logBow/$name.log;
-		samtools $toBAM $outPath/$name.sam -o $outPath/$name.bam - 2>&1 | tee -a $logPath; #For tests use | head -n 400 | in between gzip and bowtie		
+		#samtools $toBAM $outPath/$name.sam -o $outPath/$name.bam - 2>&1 | tee -a $logPath; #For tests use | head -n 400 | in between gzip and bowtie		
+		## Get uniquely mapped reads:
+		samtools view -h -q 30 $outPath/$name.sam | grep -v "XS:i:" | samtools sort - -o $outPath/$name.bam 2>&1 | tee -a $logPath; #For tests use | head -n 400 | in between gzip and bowtie		
 		# Delete the SAM file
-		rm $outPath/$name.sam;
+		rm $outPath/$name.sam*;
 	done; #>&2 | tee $logBow/$name.log;
 
 	}
@@ -104,7 +106,7 @@ suffixOut='athIndex' #Same as BuildIndex script
 
 
 ## Read
-inSuffix="*clean*"
+inSuffix="Col-1-1_S109_L006_R1_001*clean*"
 inputFolder="$DIR/01_trimmed"
 
 
@@ -139,7 +141,7 @@ else
 ## Bowtie 2
 if [ $optionBowtie == "bwt2" ]; then ##Coupled with reaper
 	bwtParams="--time -p3 -k 10 --sensitive-local --no-unal"
-	toBAM="view -h -q30 -b -S"
+	toBAM="view -q30 -bS"
 	bow2 $bwtParams $toBAM
 
 fi;fi;
