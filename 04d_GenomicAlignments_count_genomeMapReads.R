@@ -7,22 +7,24 @@
 
 #setwd("../")
 
-
+library("ggplot2")
 library("GenomicFeatures")
 library("Rsamtools")
 library("GenomicAlignments")
-library(reshape)
+library("reshape")
 
+
+option="bwt1_genome" #or bwt2_genome
 
 ## Where the BAM files are
-files <- list.files("03_alignment/bwt1_genome/",pattern = "bam",full.names = T) ## After bowtie alignment
+pathFile <- paste0("03_alignment/",option)
+files <- list.files(pathFile,pattern = "Col-1-1_S109_L006",full.names = T) ## After bowtie alignment
 #files <- list.files("03b_deduplicated/",pattern = "bam",full.names = T) ## After dedupliating with overAmp
 
 ## Read GFF object with annotation data
 gffFile <- list.files("meta/",pattern = "gff",full.names = T)
 TxDB <- makeTxDbFromGFF(file = gffFile,circ_seqs = character())
 TxDB
-claTxDB
 seqlevels(TxDB)
 ## Manually fix annotation. In the TAIR genome sequence files plastid genomes are different than in the annotation.
 #seqlevels(TxDB)[6] <- "chloroplast"
@@ -38,6 +40,13 @@ cds <- cdsBy(TxDB, by="gene")
 ## Outdir
 outDir <- "05_RawCounts/"
 dir.create(outDir,showWarnings = F)
+
+imgDir <- "images/"
+dir.create(imgDir,showWarnings = F)
+
+countDir <- paste0("04_Counts/","GenomicAlignments_",option,"/")
+dir.create(countDir,showWarnings = F,recursive = T)
+
 
 listSummary <- list()
 
@@ -60,8 +69,8 @@ for (each in files){
   listSummary[[name]] <- assay(seExon)
   ## Save individual files
   # Skip and put everything into a single table.
-  #titulo = paste0("04_Counts/GenomicAlignments_Counts_NoDeduplicated/",name,"_countsGene.txt")
-  #write.table(titulo,x = countsExon,quote = F,row.names = T,col.names = NA)
+  titulo = paste0(countDir,name,".countsGA.txt")
+  write.table(titulo,x = assay(seExon),quote = F,row.names = T,col.names = NA)
 }
 
 length(listSummary)
@@ -70,7 +79,7 @@ sapply(listSummary,nrow)
 
 ## Create matrix
 totalSizes <- as.data.frame(sapply(listSummary,colSums))
-rownames(totalSizes) <- gsub(".bam","",sapply(files,basename))
+rownames(totalSizes) <- gsub(".bam","",rownames(totalSizes))
 colnames(totalSizes) <- "Total Reads"
 
 ######## Melt and Plot with ggplot2

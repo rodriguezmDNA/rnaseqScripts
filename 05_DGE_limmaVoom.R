@@ -7,7 +7,7 @@
 #mean-variance relationship is modelled either with precision weights or with an empirical Bayes prior trend.
 #The precision weights approach is called “voom” and the prior trend approach is called “limma-trend”
 
-setwd("~/Desktop/junk/")
+setwd("~/Desktop/ath_GxT/")
 library(edgeR)
 library(gplots)
 library(calibrate)
@@ -20,11 +20,12 @@ pValCut <- 0.05
 
 
 ## Created a folder with a name to identify the analysis. Empty by default
-shortName <- "genome_GAcounts"
+#shortName <- "genome_GAcounts_TFmutants"
+shortName <- "genome_GAcounts_wtTreatment_filterd"
 ## Pre
 outDir = paste0("06_DGE/",shortName)
 dir.create(outDir,showWarnings = F,recursive = T)
-doFilter <- F
+doFilter <- T
 #if (doFilter) {
 #  removeSamples <- c("ARID5_10mM_rep3_str12","HAT22_10mM_rep3_str12")
 #}
@@ -124,7 +125,7 @@ meta$Treatment <- as.factor(meta$Treatment)
 ## Design matrix
 
 #design <- model.matrix(~GenotypeName*Treatment+Set+Lane,data = meta)#+Lane
-design <- model.matrix(~0+GroupName+Set+Lane, data =meta)#+Lane
+design <- model.matrix(~0+GroupName+Set, data =meta)#+Lane
 colnames(design) <- gsub("meta|Name|Genotype|Treatment|:|-|/|Group","",colnames(design))
 head(design)
 
@@ -132,15 +133,23 @@ head(design)
 ### Use cpms to uncover lowly expressed genes
 dge <- DGEList(counts=GeneCounts,remove.zeros = T)
 # Filter: Genes with total counts more than 
-# minCount <- 50
-# A <- rowSums(dge$counts)
-# isexpr <- A > minCount
-# table(isexpr)
-# # OR
-range(table(meta$GroupName))
-sampleMin <- min(table(meta$GroupName))
-minCPM <- 1
-isexpr <- rowSums(cpm(dge) > minCPM) >= sampleMin #Make sure to use the minimum number of reps
+filterCPM <- TRUE #Or FALSE
+if (!filterCPM){
+  cat ("Filtering by minCounts")
+  minCount <- 50
+  A <- rowSums(dge$counts)
+  isexpr <- A > minCount
+  table(isexpr)
+} else {
+  # # OR
+  cat ("Filtering by CPM")
+  range(table(meta$GroupName))
+  sampleMin <- min(table(meta$GroupName))
+  minCPM <- 1
+  isexpr <- rowSums(cpm(dge) > minCPM) >= sampleMin #Make sure to use the minimum number of reps
+}
+######################################################
+
 table(isexpr)
 cat("Removing lowly expressed genes ( <",minCPM,"cpm on at least",sampleMin,"samples) \n")
 
@@ -191,10 +200,10 @@ col.Genotype <- c(
   "#e8a3d2")
 
 col.Genotype <- unlist(lapply(col.Genotype,function(x){rep(x,2)}))
-#col.Group <- as.vector(sapply(col.Group, function (x) rep(x,2)))
+col.Group <- as.vector(sapply(col.Group, function (x) rep(x,2)))
 
 ## Boxplot
-boxplot(v$E, range=0,col=col.Group[as.factor(meta$GroupName)], 
+boxplot(v$E, range=0,col=col.Group[as.numeric(as.factor(meta$GroupName))], 
         ylab="log2[counts]", xlab="sample", main="voom normalized counts",
         cex.axis=0.5,las=2)
 
@@ -244,67 +253,69 @@ v2 <- lmFit(v, design, block = meta$Set, correlation = cor$consensus)
 
 ### do contrasts
 contrastMatrix <- makeContrasts(
+  # WT
+  "wt1mM_vs_wt10mM"=(Col0_1mM-Col0_10mM),
   #ANAC032
-  "nac032_int"=(ANAC032_1mM-ANAC032_10mM)-(Col0_1mM-Col0_10mM),
+  #"nac032_int"=(ANAC032_1mM-ANAC032_10mM)-(Col0_1mM-Col0_10mM),
   "nac032_10mM"=ANAC032_10mM-Col0_10mM,
   "nac032_1mM"=ANAC032_1mM-Col0_1mM,
   #"nac032"=(ANAC032_1mM+ANAC032_10mM)-(Col0_10mM+Col0_1mM),
   ##ARF9
-  # "arf9_int"=(ARF9_1mM-ARF9_10mM)-(Col0_1mM-Col0_10mM),
-  # "arf9_10mM"=ARF9_10mM-Col0_10mM,
-  # "arf9_1mM"=ARF9_1mM-Col0_1mM,
+  #"arf9_int"=(ARF9_1mM-ARF9_10mM)-(Col0_1mM-Col0_10mM),
+  "arf9_10mM"=ARF9_10mM-Col0_10mM,
+  "arf9_1mM"=ARF9_1mM-Col0_1mM,
   # #"arf9"=((ARF9_1mM+ARF9_10mM))-((Col0_10mM+Col0_1mM)),
-  # ##
-  # ##ARF181
-  # "arf181_int"=(ARF181_1mM-ARF181_10mM)-(Col0_1mM-Col0_10mM),
-  # "arf181_10mM"=ARF181_10mM-Col0_10mM,
-  # "arf181_1mM"=ARF181_1mM-Col0_1mM,
-  # #"arf181"=((ARF181_1mM+ARF181_10mM))-((Col0_10mM+Col0_1mM)),
-  # ##ARF182
-  # "arf182_int"=(ARF182_1mM-ARF182_10mM)-(Col0_1mM-Col0_10mM),
-  # "arf182_10mM"=ARF182_10mM-Col0_10mM,
-  # "arf182_1mM"=ARF182_1mM-Col0_1mM,
-  # #"arf182"=((ARF182_1mM+ARF182_10mM))-((Col0_10mM+Col0_1mM)),
-  # # "ARID5"   
-  # "arid5_int"=(ARID5_1mM-ARID5_10mM)-(Col0_1mM-Col0_10mM),
-  # "arid5_10mM"=ARID5_10mM-Col0_10mM,
-  # "arid5_1mM"=ARID5_1mM-Col0_1mM,
-  # #"arid5"=((ARID5_1mM+ARID5_10mM))-((Col0_10mM+Col0_1mM)),
-  # # "ERF107"
-  # "erf107_int"=(ERF107_1mM-ERF107_10mM)-(Col0_1mM-Col0_10mM),
-  # "erf107_10mM"=ERF107_10mM-Col0_10mM,
-  # "erf107_1mM"=ERF107_1mM-Col0_1mM,
-  # #"erf107"=((ERF107_1mM+ERF107_10mM))-((Col0_10mM+Col0_1mM)),
-  # # "HAT22"   
-  # "hat22_int"=(HAT22_1mM-HAT22_10mM)-(Col0_1mM-Col0_10mM),
-  # "hat22_10mM"=HAT22_10mM-Col0_10mM,
-  # "hat22_1mM"=HAT22_1mM-Col0_1mM,
-  # #"hat22"=((HAT22_1mM+HAT22_10mM))-((Col0_10mM+Col0_1mM)),
-  # # "HMG"
-  # "hmg_int"=(HMG_1mM-HMG_10mM)-(Col0_1mM-Col0_10mM),
-  # "hmg_10mM"=HMG_10mM-Col0_10mM,
-  # "hmg_1mM"=HMG_1mM-Col0_1mM,
-  # #"hmg"=((HMG_1mM+HMG_10mM))-((Col0_10mM+Col0_1mM)),
-  # # "LBD4" 
-  # "lbd4_int"=(LBD4_1mM-LBD4_10mM)-(Col0_1mM-Col0_10mM),
-  # "lbd4_10mM"=LBD4_10mM-Col0_10mM,
-  # "lbd4_1mM"=LBD4_1mM-Col0_1mM,
-  # #"lbd4"=((LBD4_1mM+LBD4_10mM))-((Col0_10mM+Col0_1mM)),
-  # # "MYB29"    
-  # "myb29_int"=(MYB29_1mM-MYB29_10mM)-(Col0_1mM-Col0_10mM),
-  # "myb29_10mM"=MYB29_10mM-Col0_10mM,
-  # "myb29_1mM"=MYB29_1mM-Col0_1mM,
-  # #"myb29"=((MYB29_1mM+MYB29_10mM))-((Col0_10mM+Col0_1mM)),
-  # # "NAC102"
-  # "nac102_int"=(NAC102_1mM-NAC102_10mM)-(Col0_1mM-Col0_10mM),
-  # "nac102_10mM"=NAC102_10mM-Col0_10mM,
-  # "nac102_1mM"=NAC102_1mM-Col0_1mM,
-  # #"nac102"=((NAC102_1mM+NAC102_10mM))-((Col0_10mM+Col0_1mM)),
-  # # "RAV2EDF2"
-  # "rav2_int"=(RAV2EDF2_1mM-RAV2EDF2_10mM)-(Col0_1mM-Col0_10mM),
-  # "rav2_10mM"=RAV2EDF2_10mM-Col0_10mM,
-  # "rav2_1mM"=RAV2EDF2_1mM-Col0_1mM,
-  # #"rav2"=((RAV2EDF2_1mM+RAV2EDF2_10mM))-((Col0_10mM+Col0_1mM)),
+  ##
+  ##ARF181
+  #"arf181_int"=(ARF181_1mM-ARF181_10mM)-(Col0_1mM-Col0_10mM),
+  "arf181_10mM"=ARF181_10mM-Col0_10mM,
+  "arf181_1mM"=ARF181_1mM-Col0_1mM,
+  #"arf181"=((ARF181_1mM+ARF181_10mM))-((Col0_10mM+Col0_1mM)),
+  ##ARF182
+  #"arf182_int"=(ARF182_1mM-ARF182_10mM)-(Col0_1mM-Col0_10mM),
+  "arf182_10mM"=ARF182_10mM-Col0_10mM,
+  "arf182_1mM"=ARF182_1mM-Col0_1mM,
+  #"arf182"=((ARF182_1mM+ARF182_10mM))-((Col0_10mM+Col0_1mM)),
+  # "ARID5"
+  #"arid5_int"=(ARID5_1mM-ARID5_10mM)-(Col0_1mM-Col0_10mM),
+  "arid5_10mM"=ARID5_10mM-Col0_10mM,
+  "arid5_1mM"=ARID5_1mM-Col0_1mM,
+  #"arid5"=((ARID5_1mM+ARID5_10mM))-((Col0_10mM+Col0_1mM)),
+  # "ERF107"
+  #"erf107_int"=(ERF107_1mM-ERF107_10mM)-(Col0_1mM-Col0_10mM),
+  "erf107_10mM"=ERF107_10mM-Col0_10mM,
+  "erf107_1mM"=ERF107_1mM-Col0_1mM,
+  #"erf107"=((ERF107_1mM+ERF107_10mM))-((Col0_10mM+Col0_1mM)),
+  # "HAT22"
+  #"hat22_int"=(HAT22_1mM-HAT22_10mM)-(Col0_1mM-Col0_10mM),
+  "hat22_10mM"=HAT22_10mM-Col0_10mM,
+  "hat22_1mM"=HAT22_1mM-Col0_1mM,
+  #"hat22"=((HAT22_1mM+HAT22_10mM))-((Col0_10mM+Col0_1mM)),
+  # "HMG"
+  #"hmg_int"=(HMG_1mM-HMG_10mM)-(Col0_1mM-Col0_10mM),
+  "hmg_10mM"=HMG_10mM-Col0_10mM,
+  "hmg_1mM"=HMG_1mM-Col0_1mM,
+  #"hmg"=((HMG_1mM+HMG_10mM))-((Col0_10mM+Col0_1mM)),
+  # "LBD4"
+  #"lbd4_int"=(LBD4_1mM-LBD4_10mM)-(Col0_1mM-Col0_10mM),
+  "lbd4_10mM"=LBD4_10mM-Col0_10mM,
+  "lbd4_1mM"=LBD4_1mM-Col0_1mM,
+  #"lbd4"=((LBD4_1mM+LBD4_10mM))-((Col0_10mM+Col0_1mM)),
+  # "MYB29"
+  #"myb29_int"=(MYB29_1mM-MYB29_10mM)-(Col0_1mM-Col0_10mM),
+  "myb29_10mM"=MYB29_10mM-Col0_10mM,
+  "myb29_1mM"=MYB29_1mM-Col0_1mM,
+  #"myb29"=((MYB29_1mM+MYB29_10mM))-((Col0_10mM+Col0_1mM)),
+  # "NAC102"
+  #"nac102_int"=(NAC102_1mM-NAC102_10mM)-(Col0_1mM-Col0_10mM),
+  "nac102_10mM"=NAC102_10mM-Col0_10mM,
+  "nac102_1mM"=NAC102_1mM-Col0_1mM,
+  #"nac102"=((NAC102_1mM+NAC102_10mM))-((Col0_10mM+Col0_1mM)),
+  # "RAV2EDF2"
+  #"rav2_int"=(RAV2EDF2_1mM-RAV2EDF2_10mM)-(Col0_1mM-Col0_10mM),
+  "rav2_10mM"=RAV2EDF2_10mM-Col0_10mM,
+  "rav2_1mM"=RAV2EDF2_1mM-Col0_1mM,
+  #"rav2"=((RAV2EDF2_1mM+RAV2EDF2_10mM))-((Col0_10mM+Col0_1mM)),
   levels = design)
 
 
@@ -443,16 +454,6 @@ save(DEList,file = titulo)
 titulo <- paste0(outDir,"/Significant_DElist",shortName,".RData")
 save(significantDE,file = titulo)
 
-### Save each contrast individually
-dirContrasts <- paste0(outDir,"/contrasts")
-dir.create(dirContrasts)
-for (each in names(significantDE))
-{
-  cat ("Saving contrast:", each,"\n")
-  titulo <- paste0(dirContrasts,"/",shortName,"_",each,".RData")
-  write.csv(file = titulo,significantDE[[each]])
-}
-##################
 
 
 # pdf("06_DGE/Heatmaps_Significant.pdf",paper = "US")
@@ -475,6 +476,11 @@ source("Scripts/functions_jrm.R")
 DE_All <- condenseListTables(DEList) ## Use a custom function
 dim(DE_All)
 head(DE_All)
+
+titulo <- paste0(outDir,"/DE_All",shortName,".RData")
+save(DE_All,file = titulo)
+
+
 
 ################################
 ## Get all symbols
@@ -724,3 +730,29 @@ contingencyTable1 = cbind(contingencyTable1,"pVals"=fisherPVals1,"signif"=signif
 
 titulo <- paste0(outDir,"/FisherTest_PooledGenes_perGenotype_",shortName,".csv")
 write.csv(x=contingencyTable1,file = titulo,quote = F,row.names = T)
+
+#### For each contrast: Subset by adj.P.val. Indicate if they're in the network.
+##########################################################################################
+### Save each contrast individually
+dirContrasts <- paste0(outDir,"/contrasts")
+dir.create(dirContrasts)
+for (each in names(significantDE))
+{
+  cat ("Saving contrast:", each,"\n")
+  
+  
+  ### Save only significant genes.
+  tmpSign <- significantDE[[each]]
+  tmpSign <- tmpSign[,grep("logFC|adj|Symbol",colnames(tmpSign)),drop=F]
+  tmpSign <- cbind(tmpSign,"InNetwork"=ifelse(rownames(tmpSign) %in% names(GenesInNetwork),"*",""))
+  ## Save
+  titulo <- paste0(dirContrasts,"/",each,".csv")
+  write.csv(file = titulo,tmpSign)
+  
+  
+  ### Subset only genes in the network
+  tmpSign <- tmpSign[tmpSign$InNetwork=="*",]
+  titulo <- paste0(dirContrasts,"/",each,"_inNetwork.csv")
+  write.csv(file = titulo,tmpSign)
+}
+##################

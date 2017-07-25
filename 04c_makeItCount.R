@@ -9,10 +9,10 @@
 
 
 # From htseq or cDNA obtained individual library counts 
-setwd("~/Desktop/junk/")
+setwd("~/Desktop/ath_GxT/")
 
 #option="bwt1_cDNA" #bwt1_genome
-option="bwt1_genome" #
+option="bwt1_cDNA" #
 
 #### Load libraries
 library(reshape)
@@ -20,8 +20,10 @@ library(ggplot2)
 library(RColorBrewer)
 
 
-###########
+imgPath <- "images"
+dir.create(imgPath)
 
+###########
 filesDir = paste0("04_Counts/",option)
 countsDir <- as.list(list.files(filesDir,pattern = ".counts.txt",full.names = T))
 countsList <- lapply(countsDir, read.table,row.names = 1)
@@ -107,7 +109,8 @@ if (option=="bwt1_genome"){
     geom_bar(aes(fill = Description), position = "dodge", stat="identity") +
     labs(title = "HTSeq Annotation") + theme_gray() +
     scale_fill_manual(values = rev(brewer.pal(nrow(summaryMatrix),"Accent"))) +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1)) + facet_wrap(~variable,nrow=2,scales = 'free_x')
+    theme(axis.text.x = element_text(angle = 45, hjust = 1),axis.text=element_text(size=4)) + 
+    facet_wrap(~variable,nrow=2,scales = 'free_x')
   print (x)
   
   ## Close pdf
@@ -135,7 +138,6 @@ ggplot(meltSummary, aes(Library, value)) +
   geom_bar(position = "dodge", stat="identity") +
   labs(title = "Lib Size") + theme_gray() +
   scale_fill_manual(values = rev(brewer.pal(nrow(summaryMatrix),"Accent"))) +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1)) #+ facet_wrap(~variable,nrow=2,scales = 'free_x')
-
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),axis.text=element_text(size=4)) #+ facet_wrap(~variable,nrow=2,scales = 'free_x')
 dev.off()
 
