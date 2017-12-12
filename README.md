@@ -1,7 +1,7 @@
 ###Pipeline for Analysis of RNASeq data
 
 
-For a quick intro on RNASeq data analysis see [this notebook](RNASeq_Analysis_Pipeline.ipynb)
+For a quick intro on RNASeq data analysis see [this notebook](A_Quick_Intro_RNASeq.ipynb)
 
 The ([pipeline tutorial](Pipeline.ipynb)) contains a (semi) quick intro on how to use the scripts in the **Scripts** folder.
 
