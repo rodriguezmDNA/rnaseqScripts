@@ -181,15 +181,15 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/.."
 logDir=$DIR/logs #Create log folder if it doesn't exist
 if [ ! -d $logDir ]; then echo `mkdir -p $logDir`; fi
 ## 
-logBow=$DIR/logs/bowStats"_"$optionAlign$optionBowtie #Create log folder if it doesn't exist
-if [ ! -d $logBow ]; then echo `mkdir -p $logBow`; fi
+#logBow=$DIR/logs/bowStats"_"$optionAlign$optionBowtie #Create log folder if it doesn't exist
+#if [ ! -d $logBow ]; then echo `mkdir -p $logBow`; fi
 ######
 
 ## Use the same script's name but add the log extension
 ## Two ways: split string by dots, keep the first part
 # logPath=$DIR/logs/$(basename $BASH_SOURCE | cut -d . -f1).log # What if the script name has more dots?
 ## Removes specific extension:
-logPath=$DIR/logs/$(basename $BASH_SOURCE .sh).$optionAlign$optionBowtie.log
+logPath=$DIR/logs/$(basename $BASH_SOURCE .sh)_option$optionTrim.log
 
 ## Create a log file and start writing.
 echo `touch $logPath` #Create file to fill with log data
@@ -213,7 +213,7 @@ if [ $optionTrim == "A" ]; then   # Only trim
 	fastxParams='-v -Q33 -z' #for fastx_trimmer, keep consistency with how reaper outputs clean files (.clean). This will help on subsequent steps.
 else 
 	if [ $optionTrim == "B" ]; then # Coupled with reaper
-	echo 'C. Remove barcodes and adapters. Trim reads based on quality and complexity [fastx & reaper]' 2>&1 | tee -a $logPath; 
+	echo 'B. Remove barcodes and adapters. Trim reads based on quality and complexity [fastx & reaper]' 2>&1 | tee -a $logPath; 
 	## Set params
 	ToDir="$DIR/01_trimmed/" #ToDir="$DIR/01_trimmed/C_trimBC_trimAdapt_Reap" 
 	fastxParams='-v -Q33' # If coupled with reaper
@@ -260,6 +260,7 @@ if [ $optionTrim == "A" ]; then   ##Only trim
 	
 	## Unzip to stdout | Trim the first n-bases and save output  
 	gunzip -dc $file | fastx_trimmer -f $ntStart -Q33 $fastxParams -o $ToDir/$base.nobc.fq.clean.gz 2>&1 | tee -a $logPath # Use head -n 4000 in the middle for a quick test
+	
 else 
 	if [ $optionTrim == "B" ]; then ##Coupled with reaper
 	echo 'B. Remove barcodes and adapters. Trim reads based on quality and complexity [fastx & reaper]' #2>&1 | tee -a $logPath; 
@@ -268,7 +269,7 @@ else
 		
 	####
 	# Unzip the file, cut the first n bp, trim adapters and low quality segments.
-	gunzip -dc $file |  fastx_trimmer -f $ntStart $fastxParams | reaper -3pa $seqAdapt -tabu $tabu -basename $ToDir/$base $reapParams 2>&1 | tee -a $logPath # Use head -n 4000 in the middle for a quick test
+	gunzip -dc $file |  fastx_trimmer -f $ntStart -Q33 $fastxParams | reaper -3pa $seqAdapt -tabu $tabu -basename $ToDir/$base $reapParams 2>&1 | tee -a $logPath # Use head -n 4000 in the middle for a quick test
 fi; fi; ## Close every if opened
 #### 
 
@@ -284,8 +285,11 @@ done >&2 | tee -a  $logPath ## Only errors!
 
 ## Record time
 end_time=`date +%s`
-
-echo -e "\nParameters used: $bwtParams $strandAlign"  2>&1 | tee -a $logPath
-echo -e "\n execution time was `expr $end_time - $start_time` s."  2>&1 | tee -a $logPath
-echo -e "\n Done `date`"  2>&1 | tee -a $logPath
+# reaper -3pa $seqAdapt -tabu $tabu $reapParams
+echo -e "\n\t Parameters used: \n
+mode: $optionTrim (if mode A, ignore reaper arguments)
+fastx_trimmer -f $ntStart -Q33 $fastxParams
+reaper: -3pa $seqAdapt -tabu $tabu $reapParams"  2>&1 | tee -a $logPath
+echo -e "\n\texecution time was `expr $end_time - $start_time` s."  2>&1 | tee -a $logPath
+echo -e "\n\tDone `date`"  2>&1 | tee -a $logPath
 ##Done
