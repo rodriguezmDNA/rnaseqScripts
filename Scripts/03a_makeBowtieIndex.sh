@@ -18,11 +18,12 @@
 # Set options:
 # {bwt1/bwt2} -> Align with bowtie1 OR bowtie2
 # {cdna/genome} -> Align to cDNA or genome
-
+## Used to check if index files already exist.
 display_help() {
 	echo "Wrapper to build a reference index using bowtie{1/2}.  " >&2
 	echo "If the script detects an existing index it won't create a new one." >&2
-	echo "At least one reference (cDNA and/or genome) needed [-c/-g]." >&2
+	echo "At least one reference (cDNA or genome) needed [-c/-g]" >&2
+	echo "The script handles both or either, but needs at least one fasta file." >&2
 	echo ""
 	echo "Usage: $0 [option...] " >&2
     echo ""
@@ -35,6 +36,8 @@ display_help() {
     echo "   -s            suffix of the reference (default: \"ref\")"
     echo
     echo "example: ./03a_MakeBowtieIndex.sh -v bwt1 -s athIndex -g meta/genome_ath_TAIRv10.fa -c meta/cdna_ath_TAIRv10.fa"
+    echo "example 2 (no cDNA reference): 
+    Scripts/03a_MakeBowtieIndex.sh -v bwt1 -s athIndex -g meta/genome_ath_TAIRv10.fa"
     echo
     #echo "Assumptions:"
     #echo "* A directory with trimmed reads (with extension \"clean\" on a folder named '01_trimmed/')"
@@ -62,7 +65,7 @@ fi
 #genomeFasta=$DIR'/meta/genome_ath_TAIRv10.fa'
 #cdnaFasta=$DIR'/meta/cdna_ath_TAIRv10.fa'
 
-suffixOut='ref' #Same as BuildIndex script
+suffixOut='RefIdx' #Same as BuildIndex script
 while getopts ':hv:r:g:c:s:' option; do
   case "$option" in
     h) display_help
@@ -137,8 +140,6 @@ fi
 # 	bwtParams=`cat $paramsFile`
 # fi
 
-## Used to check if index files already exist.
-pattern="RefIdx"
 
 ############################################
 ######### Start of the Analysis
@@ -157,15 +158,15 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/.."
 logDir=$DIR/logs #Create log folder if it doesn't exist
 if [ ! -d $logDir ]; then echo `mkdir -p $logDir`; fi
 ## 
-logBow=$DIR/logs/bowStats"_"$optionAlign$optionBowtie #Create log folder if it doesn't exist
-if [ ! -d $logBow ]; then echo `mkdir -p $logBow`; fi
+#logBow=$DIR/logs/bowStats"_"$optionAlign$optionBowtie #Create log folder if it doesn't exist
+#if [ ! -d $logBow ]; then echo `mkdir -p $logBow`; fi
 ######
 
 ## Use the same script's name but add the log extension
 ## Two ways: split string by dots, keep the first part
 # logPath=$DIR/logs/$(basename $BASH_SOURCE | cut -d . -f1).log # What if the script name has more dots?
 ## Removes specific extension:
-logPath=$DIR/logs/$(basename $BASH_SOURCE .sh).$optionAlign$optionBowtie.log
+logPath=$DIR/logs/$(basename $BASH_SOURCE .sh).$suffixOut$optionBowtie.log
 
 ## Create a log file and start writing.
 echo `touch $logPath` #Create file to fill with log data
@@ -188,7 +189,7 @@ checkDir () {
 
            
 checkIndex  () {
-	if [ ! -f $toDir/$pattern ]; then
+	if [ ! -f $toDir/$suffixOut.1.ebwt ]; then
 		echo -e "Building index\n" 2>&1 | tee -a $logPath;
 		#echo $buildIndex
 		## Build index:
@@ -201,8 +202,8 @@ checkIndex  () {
 ########################################################################################################################
 
 # Out params:
-genomeToPath=$DIR"/$pattern/"$optionBowtie"_genome"
-cdnaToPath=$DIR"/$pattern/"$optionBowtie"_cdna"
+genomeToPath=$DIR"/RefIdx/"$optionBowtie"_genome"
+cdnaToPath=$DIR"/RefIdx/"$optionBowtie"_cdna"
 
 
 ## Choose flags for Bowtie or Bowtie 2
@@ -263,7 +264,11 @@ fi;fi;
 ## Record time
 end_time=`date +%s`
 
-echo -e "\nParameters used: $bwtParams $strandAlign"  2>&1 | tee -a $logPath
-echo -e "\n execution time was `expr $end_time - $start_time` s."  2>&1 | tee -a $logPath
-echo -e "\n Done `date`"  2>&1 | tee -a $logPath
+echo -e "\n\tParameters used: 
+mode: $bwt 
+Genome FASTA: $genomeFasta
+cDNA FASTA:   $cdnaFasta
+Suffix: $suffixOut"  2>&1 | tee -a $logPath
+echo -e "\n\texecution time was `expr $end_time - $start_time` s."  2>&1 | tee -a $logPath
+echo -e "\n\tDone `date`"  2>&1 | tee -a $logPath
 ##Done
