@@ -143,7 +143,7 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/.."
 logDir=$DIR/logs #Create log folder if it doesn't exist
 if [ ! -d $logDir ]; then echo `mkdir -p $logDir`; fi
 ## 
-logBow=$DIR/logs/bowStats"_"$optionAlign$optionBowtie$suffixOut #Create log folder if it doesn't exist
+logBow=$DIR/logs/bowStats"_"$optionAlign$optionBowtie #Create log folder if it doesn't exist
 if [ ! -d $logBow ]; then echo `mkdir -p $logBow`; fi
 ######
 
@@ -213,7 +213,7 @@ bow2  () {
 
 
 ## Use Out params from previous script for index file
-outPath=$DIR/"03_alignment"/$optionBowtie"_"$optionAlign_"$suffixOut"
+outPath=$DIR/"03_alignment"/$optionBowtie"_"$optionAlign
 echo `mkdir -p $outPath`
 
 
@@ -272,7 +272,8 @@ fi;fi;
 ## Record time
 end_time=`date +%s`
 
-echo -e "\nParameters used: $bwtParams $strandAlign"  2>&1 | tee -a $logPath
+echo -e "\nParameters used: $bwtParams $strandAlign 
+aligned to: $suffixOut"  2>&1 | tee -a $logPath
 echo -e "\n execution time was `expr $end_time - $start_time` s."  2>&1 | tee -a $logPath
 echo -e "\n Done `date`"  2>&1 | tee -a $logPath
 ##Done
