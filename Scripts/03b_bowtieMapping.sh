@@ -29,7 +29,7 @@ display_help() {
     echo "   -r            reference [genome/cDNA]"
     echo "Optional: "
     echo "   -a            path to a text file with bowtie arguments"
-    echo "   -s            suffix of the reference (default: \"ref\")"
+    echo "   -s            suffix of the reference (default: \"RefIdx\")"
     echo
     echo "example: Scripts/makeIdx.sh -v bwt1 -r cDNA -s athIndex -a meta/myarguments.txt"
     echo
@@ -57,7 +57,7 @@ fi
 
 ####
 
-suffixOut='ref' #Same as BuildIndex script
+suffixOut='RefIdx' #Same as BuildIndex script
 while getopts ':hv:r:a:s:' option; do
   case "$option" in
     h) display_help
@@ -143,7 +143,7 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/.."
 logDir=$DIR/logs #Create log folder if it doesn't exist
 if [ ! -d $logDir ]; then echo `mkdir -p $logDir`; fi
 ## 
-logBow=$DIR/logs/bowStats"_"$optionAlign$optionBowtie #Create log folder if it doesn't exist
+logBow=$DIR/logs/bowStats"_"$optionAlign$optionBowtie_$suffixOut #Create log folder if it doesn't exist
 if [ ! -d $logBow ]; then echo `mkdir -p $logBow`; fi
 ######
 
@@ -151,7 +151,7 @@ if [ ! -d $logBow ]; then echo `mkdir -p $logBow`; fi
 ## Two ways: split string by dots, keep the first part
 # logPath=$DIR/logs/$(basename $BASH_SOURCE | cut -d . -f1).log # What if the script name has more dots?
 ## Removes specific extension:
-logPath=$DIR/logs/$(basename $BASH_SOURCE .sh).$optionAlign$optionBowtie.log
+logPath=$DIR/logs/$(basename $BASH_SOURCE .sh).$suffixOut$optionAlign$optionBowtie.log
 
 ## Create a log file and start writing.
 echo `touch $logPath` #Create file to fill with log data
@@ -213,7 +213,7 @@ bow2  () {
 
 
 ## Use Out params from previous script for index file
-outPath=$DIR/"03_alignment"/$optionBowtie"_"$optionAlign
+outPath=$DIR/"03_alignment"/$optionBowtie"_"$optionAlign_"$suffixOut"
 echo `mkdir -p $outPath`
 
 
