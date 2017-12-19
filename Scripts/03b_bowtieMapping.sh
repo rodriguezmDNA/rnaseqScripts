@@ -143,7 +143,7 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/.."
 logDir=$DIR/logs #Create log folder if it doesn't exist
 if [ ! -d $logDir ]; then echo `mkdir -p $logDir`; fi
 ## 
-logBow=$DIR/logs/bowStats"_"$optionAlign$optionBowtie_$suffixOut #Create log folder if it doesn't exist
+logBow=$DIR/logs/bowStats"_"$optionAlign$optionBowtie$suffixOut #Create log folder if it doesn't exist
 if [ ! -d $logBow ]; then echo `mkdir -p $logBow`; fi
 ######
 
