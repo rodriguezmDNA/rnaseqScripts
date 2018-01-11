@@ -1,0 +1,1 @@
+-geom no-bc -dust-suffix-late 10/ACTG -dust-suffix 10/ACTG --noqc -nnn-check 1/1 -qqq-check 33/10 -clean-length 30 -tri 20 -polya 5 --bcq-late

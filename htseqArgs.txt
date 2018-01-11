@@ -1,0 +1,1 @@
+-f sam --stranded yes --mode intersection-strict --idattr ID --type gene
